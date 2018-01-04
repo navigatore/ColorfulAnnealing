@@ -2,7 +2,7 @@ import argparse
 import random
 
 def gen_graph(n, p):
-    graph = [[0] * n for _ in range(n)] 
+    graph = [[0] * n for _ in range(n)]
 
     for i in range(n - 1):
         for k in range(i + 1, n):

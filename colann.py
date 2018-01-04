@@ -52,12 +52,14 @@ def gen_neighbor(coloring):
 
 INITTEMP = 10
 CUTOFF = 0.1
-FREEZE_LIM = 5 
+FREEZE_LIM = 5
 MINPERCENT = 0.02
 
 TEMPFACTOR = 0.95
 SIZEFACTOR = 2
 
+OUTER_LOOP_LIMIT = 10
+INNER_LOOP_LIMIT = 100
 
 def gen_init_coloring(length):
     return [list(range(length))]
@@ -70,9 +72,13 @@ def annealing(adjacency):
     freezecount = 0
     temp = INITTEMP
 
-    while freezecount < FREEZE_LIM:
+    outer_c = 0
+    inner_c = 0
+
+    first_changes = -1
+    while freezecount < FREEZE_LIM and outer_c < OUTER_LOOP_LIMIT:
         changes = trials = 0
-        while trials < SIZEFACTOR * nb_size and changes < CUTOFF * nb_size:
+        while trials < SIZEFACTOR * nb_size and changes < CUTOFF * nb_size and inner_c < INNER_LOOP_LIMIT:
             trials += 1
             new = gen_neighbor(current)
             new_cost = cost(new, adjacency)
@@ -93,6 +99,9 @@ def annealing(adjacency):
         temp *= TEMPFACTOR
         if changes / trials < MINPERCENT:
             freezecount += 1
+        if first_changes == -1:
+            first_changes = changes
+            print("LPPL: " + str(changes))
 
     return (best, best_cost)
 
@@ -113,7 +122,7 @@ def is_legal(solution):
 
 def print_coloring(solution):
     coloring, cost = solution
-    
+
     print('Best coloring found:')
     for color in coloring:
         print(color.__str__()[1:-1])
@@ -142,5 +151,3 @@ if __name__ == '__main__':
     print_coloring(sln)
     if not is_legal(sln):
         sys.exit(ILLEGAL_COLORING_ERROR_CODE)
-
-
