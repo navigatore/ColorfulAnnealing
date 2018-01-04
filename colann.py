@@ -51,12 +51,8 @@ def gen_neighbor(coloring):
 
 
 INITTEMP = 10
-CUTOFF = 0.1
-FREEZE_LIM = 5
-MINPERCENT = 0.02
 
 TEMPFACTOR = 0.95
-SIZEFACTOR = 2
 
 OUTER_LOOP_LIMIT = 10
 INNER_LOOP_LIMIT = 100
@@ -73,12 +69,14 @@ def annealing(adjacency):
     temp = INITTEMP
 
     outer_c = 0
-    inner_c = 0
 
     first_changes = -1
-    while freezecount < FREEZE_LIM and outer_c < OUTER_LOOP_LIMIT:
+    while outer_c < OUTER_LOOP_LIMIT:
+        outer_c += 1
         changes = trials = 0
-        while trials < SIZEFACTOR * nb_size and changes < CUTOFF * nb_size and inner_c < INNER_LOOP_LIMIT:
+        inner_c = 0
+        while inner_c < INNER_LOOP_LIMIT:
+            inner_c += 1
             trials += 1
             new = gen_neighbor(current)
             new_cost = cost(new, adjacency)
@@ -97,8 +95,6 @@ def annealing(adjacency):
                     current = new
 
         temp *= TEMPFACTOR
-        if changes / trials < MINPERCENT:
-            freezecount += 1
         if first_changes == -1:
             first_changes = changes
             print("LPPL: " + str(changes))
