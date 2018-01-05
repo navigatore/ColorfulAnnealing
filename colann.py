@@ -138,7 +138,7 @@ ILLEGAL_COLORING_ERROR_CODE = 2
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('init_temp', type=int, help='initial temperature')
+    parser.add_argument('init_temp', type=float, help='initial temperature')
     parser.add_argument('outer_lim', type=int, help='number of iterations in an outer loop of algorithm')
     parser.add_argument('inner_lim', type=int, help='number of iterations in an inner loop (where temperature is constant)')
     args = parser.parse_args()
