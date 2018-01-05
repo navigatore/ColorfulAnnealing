@@ -93,7 +93,7 @@ def annealing(adjacency, init_temp, outer_lim, inner_lim):
         temp *= TEMPFACTOR
         if first_changes == -1:
             first_changes = changes
-            print("LPPL: " + str(changes))
+            print("LPPL: " + str(changes/inner_lim))
 
     return (best, best_cost)
 
