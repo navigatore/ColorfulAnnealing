@@ -3,7 +3,8 @@ import copy
 import math
 import fileinput
 import sys
-
+import argparse
+import codecs
 
 def cost(coloring, adjacency):
     sc = size_cost(coloring, adjacency)
@@ -50,32 +51,27 @@ def gen_neighbor(coloring):
     return coloring
 
 
-INITTEMP = 10
-
 TEMPFACTOR = 0.95
-
-OUTER_LOOP_LIMIT = 10
-INNER_LOOP_LIMIT = 100
 
 def gen_init_coloring(length):
     return [list(range(length))]
 
 
-def annealing(adjacency):
+def annealing(adjacency, init_temp, outer_lim, inner_lim):
     nb_size = len(adjacency)**2
     current = best = gen_init_coloring(len(adjacency))
     current_cost = best_cost = cost(best, adjacency)
     freezecount = 0
-    temp = INITTEMP
+    temp = init_temp
 
     outer_c = 0
 
     first_changes = -1
-    while outer_c < OUTER_LOOP_LIMIT:
+    while outer_c < outer_lim:
         outer_c += 1
         changes = trials = 0
         inner_c = 0
-        while inner_c < INNER_LOOP_LIMIT:
+        while inner_c < inner_lim:
             inner_c += 1
             trials += 1
             new = gen_neighbor(current)
@@ -104,7 +100,7 @@ def annealing(adjacency):
 
 def load_adjacency_matrix():
     matrix = []
-    for line in fileinput.input():
+    for line in fileinput.input([]):
         row = [int(x) for x in line.split()]
         if len(row) > 1:
             matrix.append(row)
@@ -141,8 +137,14 @@ ILLEGAL_COLORING_ERROR_CODE = 2
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('init_temp', type=int, help='initial temperature')
+    parser.add_argument('outer_lim', type=int, help='number of iterations in an outer loop of algorithm')
+    parser.add_argument('inner_lim', type=int, help='number of iterations in an inner loop (where temperature is constant)')
+    args = parser.parse_args()
+
     adjacency = load_adjacency_matrix()
-    sln = annealing(adjacency)
+    sln = annealing(adjacency, args.init_temp, args.outer_lim, args.inner_lim)
     print_graph(adjacency)
     print_coloring(sln)
     if not is_legal(sln):
