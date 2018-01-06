@@ -4,7 +4,6 @@ import math
 import fileinput
 import sys
 import argparse
-import codecs
 
 def cost(coloring, adjacency):
     sc = size_cost(coloring, adjacency)
@@ -24,10 +23,10 @@ def count_bad_edges(color, adjacency_row):
     return len([1 for x in color[0] if adjacency_row[x] == 1])
 
 def gen_neighbor(coloring):
-    coloring = copy.deepcopy(coloring)
-
     color_no = random.randrange(len(coloring))
     vertex_no = random.randrange(len(coloring[color_no][0]))
+
+    revert_info = [color_no, coloring[color_no][1], -1, 0]
 
     vertex = coloring[color_no][0].pop(vertex_no)
 
@@ -40,13 +39,31 @@ def gen_neighbor(coloring):
     if new_color_no == len(coloring):
         coloring.append([[vertex], 0])
     else:
+        revert_info[2:] = new_color_no, coloring[new_color_no][1]
         coloring[new_color_no][0].append(vertex)
-        coloring[new_color_no][1] += count_bad_edges(coloring[new_color_no], adjacency[vertex]) 
+        coloring[new_color_no][1] += count_bad_edges(coloring[new_color_no], adjacency[vertex])
 
     if len(coloring[color_no][0]) == 0:
         del coloring[color_no]
+        revert_info[0] = -1
+        if revert_info[2] > color_no:
+            revert_info[2] -= 1
+    
+    return revert_info
 
-    return coloring
+
+def revert(coloring, revert_info):
+    old_idx, old_be, new_idx, new_be = revert_info
+    
+    if old_idx != -1:
+        coloring[old_idx][0].append(coloring[new_idx][0].pop())
+        coloring[old_idx][1], coloring[new_idx][1] = old_be, new_be
+        if len(coloring[new_idx][0]) == 0:
+            del coloring[new_idx]
+    
+    elif new_idx != -1:
+        coloring.append([[coloring[new_idx][0].pop()], 0])
+        coloring[new_idx][1] = new_be
 
 
 TEMPFACTOR = 0.95
@@ -61,36 +78,38 @@ def annealing(adjacency, init_temp, outer_lim, inner_lim):
     current_cost = best_cost = cost(best, adjacency)
     freezecount = 0
     temp = init_temp
+    
+    deepcopied = True
 
-    outer_c = 0
-
-    first_changes = -1
-    while outer_c < outer_lim:
-        outer_c += 1
+    first_changes = True
+    for _ in range(outer_lim):
         changes = trials = 0
-        inner_c = 0
-        while inner_c < inner_lim:
-            inner_c += 1
+        for _ in range(inner_lim):
             trials += 1
-            new = gen_neighbor(current)
-            new_cost = cost(new, adjacency)
+            revert_info = gen_neighbor(current)
+            new_cost = cost(current, adjacency)
             cost_diff = sum(new_cost) - sum(current_cost)
             if cost_diff <= 0:
                 changes += 1
-                current = new
                 current_cost = new_cost
                 if sum(new_cost) < sum(best_cost):
-                    best = new
+                    deepcopied = False
+                    best = current
                     best_cost = new_cost
-                    freezecount = 0
             else:
                 if random.random() <= math.e ** (-cost_diff / temp):
                     changes += 1
-                    current = new
+                    if not deepcopied:
+                        best = copy.deepcopy(current)
+                        revert(best, revert_info)
+                        deepcopied = True
+                else:
+                    revert(current, revert_info)
+
 
         temp *= TEMPFACTOR
-        if first_changes == -1:
-            first_changes = changes
+        if first_changes:
+            first_changes = False
             print("LPPL: " + str(changes/inner_lim))
 
     return (best, best_cost)
