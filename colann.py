@@ -13,39 +13,37 @@ def cost(coloring, adjacency):
 
 
 def size_cost(coloring, adjacency):
-    return -sum((len(color)**2 for color in coloring))
+    return -sum((len(color[0])**2 for color in coloring))
 
 
 def bad_cost(coloring, adjacency):
-    cost = 0
+    return sum ([2 * len(color[0]) * color[1] for color in coloring])
 
-    for color in coloring:
-        for i, vert_num in enumerate(color):
-            for k in range(i+1, len(color)):
-                if adjacency[vert_num][color[k]] == 1:
-                    cost += 2 * len(color)
 
-    return cost
-
+def count_bad_edges(color, adjacency_row):
+    return len([1 for x in color[0] if adjacency_row[x] == 1])
 
 def gen_neighbor(coloring):
     coloring = copy.deepcopy(coloring)
 
     color_no = random.randrange(len(coloring))
-    vertex_no = random.randrange(len(coloring[color_no]))
+    vertex_no = random.randrange(len(coloring[color_no][0]))
 
-    vertex = coloring[color_no].pop(vertex_no)
+    vertex = coloring[color_no][0].pop(vertex_no)
+
+    coloring[color_no][1] -= count_bad_edges(coloring[color_no], adjacency[vertex])
 
     new_color_no = random.randrange(len(coloring))
     if new_color_no >= color_no:
         new_color_no += 1
 
     if new_color_no == len(coloring):
-        coloring.append([vertex])
+        coloring.append([[vertex], 0])
     else:
-        coloring[new_color_no].append(vertex)
+        coloring[new_color_no][0].append(vertex)
+        coloring[new_color_no][1] += count_bad_edges(coloring[new_color_no], adjacency[vertex]) 
 
-    if len(coloring[color_no]) == 0:
+    if len(coloring[color_no][0]) == 0:
         del coloring[color_no]
 
     return coloring
@@ -54,7 +52,7 @@ def gen_neighbor(coloring):
 TEMPFACTOR = 0.95
 
 def gen_init_coloring(length):
-    return [list(range(length))]
+    return [ [[x], 0] for x in range(length) ]
 
 
 def annealing(adjacency, init_temp, outer_lim, inner_lim):
@@ -117,7 +115,7 @@ def print_coloring(solution):
 
     print('Best coloring found:')
     for color in coloring:
-        print(color.__str__()[1:-1])
+        print(color[0].__str__()[1:-1], '|', color[1], 'BE')
 
     print('\nColors used:', len(coloring))
     print('Cost of solution:', sum(cost))
@@ -145,7 +143,7 @@ if __name__ == '__main__':
 
     adjacency = load_adjacency_matrix()
     sln = annealing(adjacency, args.init_temp, args.outer_lim, args.inner_lim)
-    print_graph(adjacency)
+    # print_graph(adjacency)
     print_coloring(sln)
     if not is_legal(sln):
         sys.exit(ILLEGAL_COLORING_ERROR_CODE)
