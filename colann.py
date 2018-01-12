@@ -1,3 +1,4 @@
+# cython: language_level=3, boundscheck=False
 import random
 import copy
 import math
@@ -5,22 +6,24 @@ import fileinput
 import sys
 import argparse
 
-def cost(coloring, adjacency):
-    sc = size_cost(coloring, adjacency)
-    bc = bad_cost(coloring, adjacency)
+
+def cost(coloring):
+    sc = size_cost(coloring)
+    bc = bad_cost(coloring)
     return sc, bc
 
 
-def size_cost(coloring, adjacency):
+def size_cost(coloring):
     return -sum((len(color[0])**2 for color in coloring))
 
 
-def bad_cost(coloring, adjacency):
-    return sum ([2 * len(color[0]) * color[1] for color in coloring])
+def bad_cost(coloring):
+    return sum([2 * len(color[0]) * color[1] for color in coloring])
 
 
 def count_bad_edges(color, adjacency_row):
     return len([1 for x in color[0] if adjacency_row[x] == 1])
+
 
 def gen_neighbor(coloring):
     color_no = random.randrange(len(coloring))
@@ -38,6 +41,7 @@ def gen_neighbor(coloring):
 
     if new_color_no == len(coloring):
         coloring.append([[vertex], 0])
+
     else:
         revert_info[2:] = new_color_no, coloring[new_color_no][1]
         coloring[new_color_no][0].append(vertex)
@@ -68,37 +72,35 @@ def revert(coloring, revert_info):
 
 TEMPFACTOR = 0.95
 
+
 def gen_init_coloring(length):
     return [ [[x], 0] for x in range(length) ]
+    # return [[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 45]]
 
 
 def annealing(adjacency, init_temp, outer_lim, inner_lim):
-    nb_size = len(adjacency)**2
     current = best = gen_init_coloring(len(adjacency))
-    current_cost = best_cost = cost(best, adjacency)
-    freezecount = 0
+    current_cost = best_cost = cost(best)
     temp = init_temp
     
     deepcopied = True
 
-    first_changes = True
-    for _ in range(outer_lim):
-        changes = trials = 0
+    for i in range(outer_lim):
+        up_changes = possible_up_changes = 0
         for _ in range(inner_lim):
-            trials += 1
             revert_info = gen_neighbor(current)
-            new_cost = cost(current, adjacency)
+            new_cost = cost(current)
             cost_diff = sum(new_cost) - sum(current_cost)
             if cost_diff <= 0:
-                changes += 1
                 current_cost = new_cost
                 if sum(new_cost) < sum(best_cost):
                     deepcopied = False
                     best = current
                     best_cost = new_cost
             else:
+                possible_up_changes += 1
                 if random.random() <= math.e ** (-cost_diff / temp):
-                    changes += 1
+                    up_changes += 1
                     if not deepcopied:
                         best = copy.deepcopy(current)
                         revert(best, revert_info)
@@ -106,13 +108,15 @@ def annealing(adjacency, init_temp, outer_lim, inner_lim):
                 else:
                     revert(current, revert_info)
 
-
         temp *= TEMPFACTOR
-        if first_changes:
-            first_changes = False
-            print("LPPL: " + str(changes/inner_lim))
+        if i == 0:
+            print('Accepted upwards jumps (highest temp):', up_changes/possible_up_changes if possible_up_changes != 0 else 0)
+            print('Max possible changes:', possible_up_changes)
+        elif i == outer_lim - 1:
+            print('Accepted upwards jumps (lowest temp):', up_changes/possible_up_changes if possible_up_changes != 0 else 0)
+            print('Max possible changes:', possible_up_changes)
 
-    return (best, best_cost)
+    return best, best_cost
 
 
 def load_adjacency_matrix():

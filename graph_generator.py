@@ -1,6 +1,7 @@
 import argparse
 import random
 
+
 def gen_graph(n, p):
     graph = [[0] * n for _ in range(n)]
 

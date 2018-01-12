@@ -11,7 +11,6 @@ parser.add_argument('init_temp', type=float, help='initial temperature')
 parser.add_argument('outer_loop', type=int, help='initial temperature')
 parser.add_argument('inner_loop', type=int, help='initial temperature')
 parser.add_argument('graph_size', type=int, help='graph size')
-parser.add_argument('probability', type=float, help='probability of an edge')
 args = parser.parse_args()
 
 REPEAT = 50
@@ -24,8 +23,8 @@ missed = 0
 jumps_begin_avg = jumps_end_avg = cost_avg = 0.0
 i = 0
 while i < REPEAT:
-    
-    process = Popen(["python3", "./graph_generator.py", str(args.graph_size), str(args.probability)], stdout=PIPE)
+
+    process = Popen(["python3", "./cycle_generator.py", str(args.graph_size)], stdout=PIPE)
     output, _ = process.communicate()
 
     process = Popen(["./colann", str(args.init_temp), str(OUTER_LOOP), str(INNER_LOOP)], stdin=PIPE, stdout=PIPE)
@@ -33,7 +32,7 @@ while i < REPEAT:
     exit_code = process.wait()
     if exit_code != 0:
         missed += 1
-        print("Illegal solution, n =", args.graph_size, ", p =", args.probability, ", init temp =", args.init_temp, file=sys.stderr)
+        print("Illegal solution, n =", args.graph_size, "init temp =", args.init_temp, file=sys.stderr)
         continue
 
     p = re.compile('Accepted upwards jumps \(highest temp\): (.*)\n')
@@ -62,4 +61,4 @@ jumps_end_avg /= REPEAT
 cost_avg /= REPEAT
 
 
-print("n =", args.graph_size, ", p =", args.probability, ", init temp =", args.init_temp, ", jumps (highest temp) =", jumps_begin_avg, "%, jumps (lowest temp) =", jumps_end_avg, "%, cost =", cost_avg, ", missed = ", missed)
+print("n =", args.graph_size, ", init temp =", args.init_temp, ", jumps (highest temp) =", jumps_begin_avg, "%, jumps (lowest temp) =", jumps_end_avg, "%, cost =", cost_avg, ", missed = ", missed)
